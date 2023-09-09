@@ -82,8 +82,9 @@ string findXOR(string a, string b){
     return res;
 }
 
-string getRemainder(string m, string gen){
-    m.append(string(gen.length()-1,'0'));
+string getRemainder(string m, string gen, bool check=false){
+    if(!check)
+        m.append(string(gen.length()-1,'0'));
 
     string rem = m.substr(0, gen.length());
     for(int i = gen.length(); i < m.length(); i++){
@@ -118,6 +119,9 @@ int main(){
     cout << "Data padded: " << padded << endl << endl;
 
     // arranging into column
+    int n_col = m*8;
+    int n_row = padded.length() / m;
+
     vector<string > columns;
     for(int i = 0; i*m < padded.size();i++){
         string row = "";
@@ -138,6 +142,7 @@ int main(){
         printHamming(s);
         hamming_columns.push_back(s);
     }
+    n_col = hamming_columns[0].length();
 
     // serializing
     string serialized = "";
@@ -160,16 +165,49 @@ int main(){
 
     // recieving data
     string recieved = "";
+    vector<bool> errors;
     for(auto i: sent){
         int random = rand() % 1000000;
         if(random < prob * 1000000){
             recieved.push_back(i == '0'? '1':'0');
             cout << "\033[1;31m" << recieved.back() << "\033[1;0m";
+            errors.push_back(1);
         }
         else{
             recieved.push_back(i);
             cout << i ;
+            errors.push_back(0);
         }
     }
+    cout << endl << endl;
+
+    // checking checksum
+    string error_check = getRemainder(recieved, generator, true);
+    cout << "Result of CRC checksum matching: " 
+        << (error_check.find('1') != -1? "error detected" : "No error detected")
+        << endl << endl;
+
+    // deserializing data
+    vector<string> recieved_columns(n_row, string(n_col, '0'));
+    vector<vector<bool>> error_columns(n_row, vector<bool>(n_col, 0));
+    for(int i = 0; i < recieved.size(); i++){
+        int row = i / n_row;
+        int col = i % n_row;
+        recieved_columns[col][row] = recieved[i];
+        error_columns[col][row] = errors[i];
+    }
+
+    cout << "Data block after removeing CRC checksum bits: " << endl;
+    for(int i = 0; i < n_row; i++){
+        for (int j = 0; j < n_col; j++){ 
+            if(error_columns[i][j]){
+                cout << "\033[1;31m" << recieved_columns[i][j] << "\033[1;0m";
+            }
+            else
+                cout << recieved_columns[i][j];
+        }
+        cout << endl;
+    }
     cout << endl;
+    
 }
