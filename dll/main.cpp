@@ -98,6 +98,8 @@ string getRemainder(string m, string gen){
 }
 
 int main(){
+    srand(1927);
+
     string data;
     int m;
     double prob;
@@ -111,9 +113,11 @@ int main(){
     cout << "probabilities: " << prob << endl;
     cout << "Generator: " << generator << endl;
 
+    // padding data
     string padded = data + string( data.length()%m == 0? 0: m - data.length()%m, '~');
     cout << "Data padded: " << padded << endl << endl;
 
+    // arranging into column
     vector<string > columns;
     for(int i = 0; i*m < padded.size();i++){
         string row = "";
@@ -126,6 +130,7 @@ int main(){
     cout << "Data blocks" << endl;
     for(auto i : columns) cout << i << endl; cout << endl;
 
+    // adding hamming code
     cout << "After adding hamming codes: " << endl;
     vector<string> hamming_columns;
     for(auto &i : columns){
@@ -134,6 +139,7 @@ int main(){
         hamming_columns.push_back(s);
     }
 
+    // serializing
     string serialized = "";
     for(int i = 0; i < hamming_columns[0].length();i++){
         for(int j = 0; j < hamming_columns.size(); j++){
@@ -145,11 +151,25 @@ int main(){
     cout << "Data bits after column-wise serialization:" << endl;
     cout << serialized << endl;
 
+    // crc checksum generate
     string crc_checksum =  getRemainder(serialized, generator) ;
     string sent = serialized + crc_checksum;
     cout << endl;
     cout << "Data bits after appending CRC checksum:" << endl;
-    cout << serialized << "\033[1;34m" << crc_checksum << "\033[1;0m" << endl;
+    cout << serialized << "\033[1;36m" << crc_checksum << "\033[1;0m" << endl;
 
-    
+    // recieving data
+    string recieved = "";
+    for(auto i: sent){
+        int random = rand() % 1000000;
+        if(random < prob * 1000000){
+            recieved.push_back(i == '0'? '1':'0');
+            cout << "\033[1;31m" << recieved.back() << "\033[1;0m";
+        }
+        else{
+            recieved.push_back(i);
+            cout << i ;
+        }
+    }
+    cout << endl;
 }
