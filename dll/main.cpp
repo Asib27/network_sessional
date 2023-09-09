@@ -109,4 +109,15 @@ int main(){
         printHamming(s);
         hamming_columns.push_back(s);
     }
+
+    string serialized = "";
+    for(int i = 0; i < hamming_columns[0].length();i++){
+        for(int j = 0; j < hamming_columns.size(); j++){
+            serialized += hamming_columns[j][i] ;
+        }
+    }
+
+    cout << endl;
+    cout << "Data bits after column-wise serialization:" << endl;
+    cout << serialized << endl;
 }
