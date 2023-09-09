@@ -73,6 +73,30 @@ string getHammingString(string s){
     return hamming;
 }
 
+string findXOR(string a, string b){
+    string res = "";
+    for(int i = 0; i < a.length(); i++){
+        if(a[i] == b[i]) res.push_back('0');
+        else res.push_back('1');
+    }
+    return res;
+}
+
+string getRemainder(string m, string gen){
+    m.append(string(gen.length()-1,'0'));
+
+    string rem = m.substr(0, gen.length());
+    for(int i = gen.length(); i < m.length(); i++){
+        if(rem[0] == '1'){
+            rem = findXOR(rem, gen);
+        }
+        rem = rem.substr(1) + m[i];
+    }
+
+    if(rem[0] == '0') return rem.substr(1);
+    return findXOR(rem, gen).substr(1);
+}
+
 int main(){
     string data;
     int m;
@@ -87,7 +111,7 @@ int main(){
     cout << "probabilities: " << prob << endl;
     cout << "Generator: " << generator << endl;
 
-    string padded = data + string(data.length()%m, '~');
+    string padded = data + string( data.length()%m == 0? 0: m - data.length()%m, '~');
     cout << "Data padded: " << padded << endl << endl;
 
     vector<string > columns;
@@ -120,4 +144,12 @@ int main(){
     cout << endl;
     cout << "Data bits after column-wise serialization:" << endl;
     cout << serialized << endl;
+
+    string crc_checksum =  getRemainder(serialized, generator) ;
+    string sent = serialized + crc_checksum;
+    cout << endl;
+    cout << "Data bits after appending CRC checksum:" << endl;
+    cout << serialized << "\033[1;34m" << crc_checksum << "\033[1;0m" << endl;
+
+    
 }
