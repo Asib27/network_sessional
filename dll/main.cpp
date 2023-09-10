@@ -117,7 +117,7 @@ string getNormalFromHamming(string s, int n_parity){
         }
     }
 
-    if(error_idx != 0)
+    if(error_idx != 0 && error_idx < s.length())
         s[error_idx-1] = s[error_idx-1] == '0'? '1' : '0'; // toggle
     string ans = "";
     int cur = 1;
@@ -219,20 +219,20 @@ int main(){
     // checking checksum
     string error_check = getRemainder(recieved, generator, true);
     cout << "result of CRC checksum matching: " 
-        << (error_check.find('1') != -1? "error detected" : "No error detected")
+        << (error_check.find('1') != -1? "error detected" : "no error detected")
         << endl << endl;
 
     // deserializing data
     vector<string> recieved_columns(n_row, string(n_col, '0'));
     vector<vector<bool>> error_columns(n_row, vector<bool>(n_col, 0));
-    for(int i = 0; i < recieved.size(); i++){
+    for(int i = 0; i < n_row * n_col; i++){
         int row = i / n_row;
         int col = i % n_row;
         recieved_columns[col][row] = recieved[i];
         error_columns[col][row] = errors[i];
     }
 
-    cout << "data block after removeing CRC checksum bits: " << endl;
+    cout << "data block after removing CRC checksum bits: " << endl;
     for(int i = 0; i < n_row; i++){
         for (int j = 0; j < n_col; j++){ 
             if(error_columns[i][j]){
