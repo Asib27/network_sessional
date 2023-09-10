@@ -98,8 +98,39 @@ string getRemainder(string m, string gen, bool check=false){
     return findXOR(rem, gen).substr(1);
 }
 
+string getNormalFromHamming(string s, int n_parity){
+    vector<bool> parity(n_parity, 0);
+
+    for(int i = 0; i < s.length(); i++){
+        for(int j = 0; j < parity.size(); j++){
+            // cout << i+1 << ' ' << j << " "  <<  ((1 << j) & (i+1)) << endl;
+            if( ((1 << j) & (i+1)) != 0){
+                parity[j] = parity[j] == (s[i] - '0') ? 0 : 1;
+            }
+        }
+    }
+
+    int error_idx = 0;
+    for(int i = 0; i < n_parity; i++){
+        if(parity[i] == 1){
+            error_idx += (1<<i);
+        }
+    }
+
+    if(error_idx != 0)
+        s[error_idx-1] = s[error_idx-1] == '0'? '1' : '0'; // toggle
+    string ans = "";
+    int cur = 1;
+    for(int i = 0; i < s.length(); i++){
+        if(i == cur-1) cur *= 2;
+        else ans.push_back(s[i]);
+    }
+
+    return ans;
+}
+
 int main(){
-    srand(1927);
+    srand(1);
 
     string data;
     int m;
@@ -116,7 +147,7 @@ int main(){
 
     // padding data
     string padded = data + string( data.length()%m == 0? 0: m - data.length()%m, '~');
-    cout << "Data padded: " << padded << endl << endl;
+    cout << "data string after padding: " << padded << endl << endl;
 
     // arranging into column
     int n_col = m*8;
@@ -131,18 +162,20 @@ int main(){
         columns.push_back(row);
     }
 
-    cout << "Data blocks" << endl;
+    cout << "data block (ascii code of m characters per row): " << endl;
     for(auto i : columns) cout << i << endl; cout << endl;
 
     // adding hamming code
-    cout << "After adding hamming codes: " << endl;
+    cout << "data block after adding check bits: " << endl;
     vector<string> hamming_columns;
     for(auto &i : columns){
         string s = getHammingString(i);
         printHamming(s);
         hamming_columns.push_back(s);
     }
+    int n_parity = hamming_columns[0].length() - n_col; 
     n_col = hamming_columns[0].length();
+
 
     // serializing
     string serialized = "";
@@ -153,22 +186,24 @@ int main(){
     }
 
     cout << endl;
-    cout << "Data bits after column-wise serialization:" << endl;
+    cout << "data bits after column-wise serialization:" << endl;
     cout << serialized << endl;
 
     // crc checksum generate
     string crc_checksum =  getRemainder(serialized, generator) ;
     string sent = serialized + crc_checksum;
     cout << endl;
-    cout << "Data bits after appending CRC checksum:" << endl;
+    cout << "data bits after appending CRC checksum (sent frame): " << endl;
     cout << serialized << "\033[1;36m" << crc_checksum << "\033[1;0m" << endl;
 
     // recieving data
+    cout << endl;
+    cout << "received frame: " << endl;
     string recieved = "";
     vector<bool> errors;
     for(auto i: sent){
-        int random = rand() % 1000000;
-        if(random < prob * 1000000){
+        double random = (double)rand() / RAND_MAX;
+        if(random < prob){
             recieved.push_back(i == '0'? '1':'0');
             cout << "\033[1;31m" << recieved.back() << "\033[1;0m";
             errors.push_back(1);
@@ -183,7 +218,7 @@ int main(){
 
     // checking checksum
     string error_check = getRemainder(recieved, generator, true);
-    cout << "Result of CRC checksum matching: " 
+    cout << "result of CRC checksum matching: " 
         << (error_check.find('1') != -1? "error detected" : "No error detected")
         << endl << endl;
 
@@ -197,7 +232,7 @@ int main(){
         error_columns[col][row] = errors[i];
     }
 
-    cout << "Data block after removeing CRC checksum bits: " << endl;
+    cout << "data block after removeing CRC checksum bits: " << endl;
     for(int i = 0; i < n_row; i++){
         for (int j = 0; j < n_col; j++){ 
             if(error_columns[i][j]){
@@ -209,5 +244,24 @@ int main(){
         cout << endl;
     }
     cout << endl;
-    
+
+    // error correction
+    cout << "data block after removing check bits: " << endl;
+    vector<string> error_corrected_columns;
+    for(auto i: recieved_columns){
+        error_corrected_columns.push_back(getNormalFromHamming(i, n_parity));
+        cout << error_corrected_columns.back() << endl;
+    }
+    cout << endl;
+
+    // input regeneration
+    string regenerated = "";
+    for(auto i: error_corrected_columns){
+        for(int j = 0; j < i.length(); j+=8){
+            auto s = i.substr(j, 8);
+            int code = stoi(s, 0, 2);
+            regenerated.push_back(code);
+        }
+    }
+    cout << "output frame: " << regenerated << endl;
 }
